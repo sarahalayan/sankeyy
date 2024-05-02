@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Generator-Receiver Sankey Diagram</title>
+  
+  
+</head>
+<body>
+  <input type="date" id="startDate">
+  <input type="date" id="endDate">
+  <button id="filterButton">Filter Data</button>
+
+  <script>
+    const filterButton = document.getElementById('filterButton');
+    filterButton.addEventListener('click', () => {
+      const startDate = document.getElementById('startDate').value;
+      const endDate = document.getElementById('endDate').value;
+
+      fetch('/filter', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ startDate, endDate })
+      })
+      .then(response => response.json())
+      .then(data => {
+        console.log(data);
+      })
+      .catch(error => {
+        console.error('Error fetching data:', error);
+      });
+    });
+  </script>
+</body>
+</html>
