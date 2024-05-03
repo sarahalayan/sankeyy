@@ -4,35 +4,157 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Generator-Receiver Sankey Diagram</title>
-  
-  
+  <link rel="stylesheet" type="text/css" href="styles.css">
 </head>
+
 <body>
-  <input type="date" id="startDate">
-  <input type="date" id="endDate">
+  <div >
+    <h4 style="display: inline-block; margin-right: 10px;">Choose start date</h4>
+  <input type="date" id="startDate" min="2023-01-01" max="2023-12-31">
+  </div>
+  <div>
+  <h4 style="display: inline-block; margin-right: 10px;">Choose end date</h4>
+  <input type="date" id="endDate" min="2023-01-01" max="2023-12-31"></div>
   <button id="filterButton">Filter Data</button>
 
   <script>
-    const filterButton = document.getElementById('filterButton');
-    filterButton.addEventListener('click', () => {
-      const startDate = document.getElementById('startDate').value;
-      const endDate = document.getElementById('endDate').value;
+    let root;
+    let filterButton = document.getElementById('filterButton');
 
-      fetch('/filter', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ startDate, endDate })
-      })
-      .then(response => response.json())
-      .then(data => {
+    filterButton.addEventListener('click', async () => {
+      try {
+        let startDate = document.getElementById('startDate').value;
+        let endDate = document.getElementById('endDate').value;
+
+        const response = await fetch('http://localhost:5500/filter', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({ startDate, endDate })
+        });
+
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
         console.log(data);
-      })
-      .catch(error => {
-        console.error('Error fetching data:', error);
-      });
+        let sankeyData = processDataForSankey(data);
+        const chartContainer = document.getElementById('chartdiv');
+        chartContainer.innerHTML = '';
+        if (root) {
+          root.dispose();
+        }
+        root = am5.Root.new("chartdiv");
+        root.setThemes([
+          am5themes_Animated.new(root)
+        ]);
+        am5.ready(function() {
+          let series = root.container.children.push(am5flow.Sankey.new(root, {
+            sourceIdField: "from",
+            targetIdField: "to",
+            valueField: "value",
+            nodeWidth: 150,
+            paddingRight: 50,
+            nodePadding: 15
+          }));
+
+          series.nodes.get("colors").set("step", 2);
+          series.data.setAll(sankeyData);
+          series.appear(1000, 100);
+        });
+      } catch (error) {
+        console.error('Error fetching or processing data:', error);
+      }
     });
+
+
+
+    // Function to process the fetched data object for Sankey chart
+    function processDataForSankey(data) {
+      let edl1Value = data['EDLTF-1'];
+      let edl2Value = data['EDLTF-2'];
+      let edl3Value = data['EDLTF-3'];
+      let pvgenValue=data['PV Gen'];
+      let pvEdlValue=data['PV EDL'];
+      let IncomerG3=data['Incomer G3'];
+      let IncomerG4=data['Incomer G4'];
+      let Incomer1G2=data['Incomer 1 G2'];
+      let IncomerG6=data['Incomer 6'];
+      let Incomer5G1=data['Incomer 5 G1'];
+      let Incomer2G5=data['Incomer 2 G5'];
+      let WaterTreatment=data['Water Treatment'];
+      let syrup=data['Syrup Room'];
+      let lp=data['LP Compressors'];
+      let hp=data['HP Compressors'];
+      let Administration=data['Administration'];
+      let Lighting=data['Lighting'];
+      let york2=data['York 2'];
+      let york1=data['York 1'];
+      let juice=data['Juice Trop + MJ'];
+      let Line18=data['Line18'];
+      let line2=data['Line 2'];
+      let line4=data['Line 4'];
+      let line5=data['Line 5'];
+      let line6=data['Line 6'];
+      let line7=data['Line 7'];
+      let Line8=data['Line 8'];
+      let line9=data['Line 9'];
+      let line16=data['Line 16'];
+      let line17=data['Line 17'];
+      let Spare=data['Spare'];
+      let Sugar=data['Sugar Sec 18'];
+      let MJ=data['MJ Syrup Room'];
+      let auxilliaries=data['Auxiliaries juice'];
+
+
+
+      let sankeyData = [
+        { from: "EDL 1", to: "Total EDL", value: edl1Value },
+        { from: "EDL 2", to: "Total EDL", value: edl2Value },
+        { from: "EDL 3", to: "Total EDL", value: edl3Value },
+        { from: "PV EDL", to: "Total Solar", value: pvEdlValue },
+        { from: "PV GEN", to: "Total Solar", value: pvgenValue },
+        { from: "Incomer G3", to: "Total Generators", value: IncomerG3},
+        { from: "Incomer G4", to: "Total Generators", value: IncomerG4 },
+        { from: "Incomer 1 G2", to: "Total Generators", value: Incomer1G2 },
+        { from: "Incomer 6", to: "Total Generators", value: IncomerG6 },
+        { from: "Incomer 5 G1", to: "Total Generators", value: Incomer5G1 },
+        { from: "Incomer 2 G5", to: "Total Generators", value: Incomer2G5},
+        { from: "Total EDL", to: "Total Generated", value: edl1Value+edl2Value+edl3Value},
+        { from: "Total Solar", to: "Total Generated", value: pvEdlValue+pvgenValue },
+        { from: "Total Generators", to: "Total Generated", value: Incomer1G2+Incomer2G5+Incomer5G1+IncomerG3+IncomerG4+IncomerG6},
+        { from: "Total Generated", to: "Water Treatment", value: WaterTreatment },
+        { from: "Total Generated", to: "Syrup Room", value: syrup },
+        { from: "Total Generated", to: "LP Compressors", value: lp },
+        { from: "Total Generated", to: "HP Compressors", value: hp },
+        { from: "Total Generated", to: "Administration", value: Administration},
+        { from: "Total Generated", to: "Lighting", value: Lighting},
+        { from: "Total Generated", to: "York 2", value: york2},
+        { from: "Total Generated", to: "Line18", value: Line18 },
+        { from: "Total Generated", to: "Juice Trop + MJ", value: juice},
+        { from: "Total Generated", to: "Line 5", value: line5},
+        { from: "Total Generated", to: "Line 8", value: Line8},
+        { from: "Total Generated", to: "Line 4", value: line4},
+        { from: "Total Generated", to: "Line 7", value: line7},
+        { from: "Total Generated", to: "Line 2", value: line2},
+        { from: "Total Generated", to: "York 1", value: york1},
+        { from: "Total Generated", to: "Line 9", value: line9},
+        { from: "Total Generated", to: "Line 6", value: line6},
+        { from: "Total Generated", to: "Sugar Sec 18", value: Sugar},
+        { from: "Total Generated", to: "Spare", value: Spare},
+        { from: "Total Generated", to: "Line 17", value: line17},
+        { from: "Total Generated", to: "MJ Syrup Room", value: MJ},
+        { from: "Total Generated", to: "Line 16", value:line16},
+        { from: "Total Generated", to: "Auxiliaries juice", value: auxilliaries},
+          ];
+      return sankeyData;
+    }
   </script>
+  <script src="https://cdn.amcharts.com/lib/5/index.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/flow.js"></script>
+  <script src="https://cdn.amcharts.com/lib/5/themes/Animated.js"></script>
+  <div id="chartdiv" class="amcharts-sankey-container"></div>
 </body>
 </html>
